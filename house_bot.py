@@ -1,15 +1,18 @@
 """
-House M.D. Discord Bot
-By: Jacob Rowland
+house_bot.py
+
+House M.D. is a discord.py bot designed to imitate the protagonist of the show House M.D. which ran from 2004 to 2012.
+It uses the Chatterbot API to naturally respond to Discord messages. The bot is trained on all 175 episodes of the show
+that aired across 8 seasons.
 """
 import discord
-import time
-import random
 from discord.ext import commands
 from chatterbot import ChatBot
 from chatterbot.trainers import ListTrainer
 import asyncio
 import json
+import time
+import random
 
 # read config.json to get token and botid
 config = open('config.json', 'r')
@@ -22,7 +25,7 @@ prefix = config['prefix']
 chatbot = ChatBot('House')
 trainer = ListTrainer(chatbot)
 
-# set command prefix 
+# set command prefix
 bot = commands.Bot(command_prefix=prefix)
 
 @bot.event
@@ -37,18 +40,18 @@ async def on_message(message):
     # if bot is mentioned or dm'd
     if botid in message.content or message.guild is None:
             await respond(message)
-            
-    await bot.process_commands(message)     
+
+    await bot.process_commands(message)
 
 async def respond(message):
-        time.sleep(random.randrange(0,4)) 
+        time.sleep(random.randrange(0,4))
         message.content = message.content.replace(botid, '')
         response = chatbot.get_response(message.content)
         print(str(message.author) + ': ' + message.content)
         print(str(bot.user) + ': ' + str(response))
         #trainer.train([message.content, str(response)])
         async with message.channel.typing():
-            time.sleep(round(len(str(response)) / 20, 0)) 
+            time.sleep(round(len(str(response)) / 20, 0))
         await message.channel.send(response)
 
 @bot.command(name='gethappy')
@@ -61,7 +64,7 @@ async def gethappy(ctx):
         vc = await voice_channel.connect()
         vc.play(discord.FFmpegPCMAudio(source="gethappy.mp3")) # Sleep while audio is playing.
 
-        while vc.is_playing():
+        while vc.is_playing(): # prevents the bot from disconnecting while it is playing
             #time.sleep(.1)
             await asyncio.sleep(1)
 
@@ -79,13 +82,9 @@ async def leave(ctx):
 @bot.command(name="pause")
 async def pause(ctx):
     ctx.voice_client.pause()
-    
+
 @bot.command(name="resume")
 async def leave(ctx):
     ctx.voice_client.resume()
 
 bot.run(token)
-
-
-
-
