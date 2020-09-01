@@ -92,46 +92,44 @@ async def downloadYoutubeVideo(url, ctx):
 
 @bot.command(name='play')
 async def play(ctx):
-    if ctx.author.voice == None:
-        await ctx.send(str(ctx.author.name) + " is not in a channel.")
-        return
+    print(ctx.author.voice)
+    if not ctx.author.voice == None:
+        voice_channel = ctx.author.voice.channel
+        channel = None
+        if voice_channel != None:
+            channel = voice_channel.name
 
-    voice_channel = ctx.author.voice.channel
-    channel = None
-    if voice_channel != None:
-        channel = voice_channel.name
+        if ctx.guild.id not in servers:
+            servers[ctx.guild.id] = {'queue': []}
+        server = servers[ctx.guild.id]
 
-    if ctx.guild.id not in servers:
-        servers[ctx.guild.id] = {'queue': []}
+        args = str(ctx.message.content).split(" ")
+        if len(args) > 0:
+            server['queue'].append(args[1])
+            video_info = await getYoutubeVideoInfo(args[1])
+            await ctx.send(video_info['title'] + " added to queue.")
 
-    server = servers[ctx.guild.id]
+        print(server['queue'])
+        await ctx.message.delete()
 
-    args = str(ctx.message.content).split(" ")
-    if len(args) > 0:
-        server['queue'].append(args[1])
+        try:
+            vc = await voice_channel.connect()
+        except:
+            return
 
-    print(server['queue'])
-    await ctx.message.delete()
-
-    if ctx.voice_client != None:
-        return
-
-    vc = await voice_channel.connect()
-    url = server['queue'].pop()
-    video = await downloadYoutubeVideo(url, ctx)
-    video_info = await getYoutubeVideoInfo(url)
-    path = 'songs\\' + str(ctx.guild.id) + '\\' + video_info['title'] +'.mp3'
-    vc.play(discord.FFmpegPCMAudio(source=path))
-    # prevents the bot from disconnecting while it is playing
-    while vc.is_playing():
-        #time.sleep(.1)
-        await asyncio.sleep(1)
-    os.remove(path) # delete downloaded audio after playback
-
-    if server['queue'] != 0:
-        play(ctx)
-
-    await vc.disconnect()
+        if not vc.is_playing():
+            while len(server['queue']) != 0:
+                url = server['queue'].pop()
+                video = await downloadYoutubeVideo(url, ctx)
+                video_info = await getYoutubeVideoInfo(url)
+                path = 'songs\\' + str(ctx.guild.id) + '\\' + video_info['title'] +'.mp3'
+                vc.play(discord.FFmpegPCMAudio(source=path))
+                # prevents the bot from disconnecting while it is playing
+                while vc.is_playing():
+                    #time.sleep(.1)
+                    await asyncio.sleep(1)
+                os.remove(path) # delete downloaded audio after playback
+            await vc.disconnect()
 
 @bot.command(name="leave")
 async def leave(ctx):
